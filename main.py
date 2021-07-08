@@ -7,6 +7,7 @@ from torch import optim
 
 
 import os
+from datetime import datetime
 from torchsummary import summary
 
 from model import LeNet_5
@@ -23,7 +24,11 @@ print(device)
 # parameters
 lr = 0.01
 batch_size = 512
-epochs = 30
+epochs = 10
+path = "D:/projects"
+datapath = path + '/dataset'
+resultpath = path + "/lenet/results"
+modelpath = path + "/lenet/models/lenet_best_model.h"
 
 # MNIST dataset 불러오기
 data_transforms = transforms.Compose([
@@ -33,8 +38,6 @@ data_transforms = transforms.Compose([
 
 
 # traindata, testdata 불러오기
-path = "D:/projects"
-datapath = path + '/dataset'
 train_data = datasets.MNIST(datapath, train=True, download=True, transform=data_transforms)
 train_data, val_data = torch.utils.data.random_split(train_data, [50000, 10000])
 test_data = datasets.MNIST(datapath, train=True, download=True, transform=data_transforms)
@@ -49,10 +52,9 @@ test_loader = DataLoader(test_data, batch_size=batch_size)
 
 # model 불러오기
 model = LeNet_5()
-print(model)
 # model을 cuda로 전달
 model.to(device)
-print(next(model.parameters()).device)
+print("model set to",next(model.parameters()).device)
 # 모델 summary를 확인합니다.
 summary(model, input_size=(1, 32, 32))
 
@@ -100,7 +102,6 @@ def train():
 
 
                 # Early Stop
-                modelpath = path + "/lenet/models/lenet_best_model.h"
                 if val_acc > best_acc:
                     best_acc = val_acc
                     es = 5
@@ -114,10 +115,9 @@ def train():
             loss_list.append(avg_loss.item())
             valloss_list.append(val_loss.item())
             valacc_list.append(val_acc.item())
-        print("EPOCHS: [{}/{}], avg_loss: [{:.4f}], val_acc: [{:.2f}%]".format(
+        print(datetime.now().time().replace(microsecond=0), "EPOCHS: [{}/{}], avg_loss: [{:.4f}], val_acc: [{:.2f}%]".format(
                 epoch+1, epochs, avg_loss.item(), val_acc.item()*100))
-        os.makedirs(path + "/lenet/results", exist_ok=True)
-        plotgraph(loss_list=loss_list, valloss_list=valloss_list, valacc_list=valacc_list, path = path + "/lenet/results")
+        plotgraph(loss_list=loss_list, valloss_list=valloss_list, valacc_list=valacc_list, path = resultpath)
 
 
 
