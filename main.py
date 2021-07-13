@@ -25,7 +25,8 @@ print(device)
 lr = 0.01
 batch_size = 512
 epochs = 10
-path = "D:/projects"
+# path = "D:/projects"
+path = os.path.dirname(os.getcwd()) # "D:/projects"
 datapath = path + '/dataset'
 resultpath = path + "/lenet/results"
 modelpath = path + "/lenet/models/lenet_best_model.h"
@@ -67,9 +68,10 @@ optimizer = optim.Adam(model.parameters(), lr = lr)
 # 학습 함수
 def train():
     loss_list, valloss_list, valacc_list = [], [], []
+    es = 0
     for epoch in range(epochs):
         model.train()
-        avg_loss, val_loss = 0, 0
+        avg_loss, val_loss, val_acc = 0, 0
         best_acc = 0
         for i, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device)
@@ -83,8 +85,8 @@ def train():
             loss.backward()
             optimizer.step()
 
-            avg_loss += loss
-        avg_loss = avg_loss/len(train_loader)
+            avg_loss += loss/len(train_data)  # calculate average loss per epoch
+
 
         # validation
         model.eval()
@@ -94,31 +96,32 @@ def train():
 
                 prediction = model(x)
                 # for loss
-                val_loss += criterion(prediction, y) / len(val_loader)
+                loss = criterion(prediction, y)
+                val_loss += loss /len(train_data)
                 # for acc
-                correct = prediction.max(1)[1] == y
-                val_acc = correct.float().mean()
+                val_acc += (prediction.max(1)[1] == y).sum().item() * 100 / len(val_data)
 
-
-
-                # Early Stop
-                if val_acc > best_acc:
-                    best_acc = val_acc
-                    es = 5
-                    torch.save(model.state_dict(), modelpath)
-                else: 
-                    es -= 1
-                if es == 0: 
-                    model.load_state_dict(torch.load(modelpath))
-                    break
-
-            loss_list.append(avg_loss.item())
-            valloss_list.append(val_loss.item())
-            valacc_list.append(val_acc.item())
-        print(datetime.now().time().replace(microsecond=0), "EPOCHS: [{}/{}], avg_loss: [{:.4f}], val_acc: [{:.2f}%]".format(
-                epoch+1, epochs, avg_loss.item(), val_acc.item()*100))
+            
+        # append list and plot graph
+        loss_list.append(avg_loss.item())
+        valloss_list.append(val_loss.item())
+        valacc_list.append(val_acc)       
         plotgraph(loss_list=loss_list, valloss_list=valloss_list, valacc_list=valacc_list, path = resultpath)
 
+        # print loss, acc
+        print(datetime.now().time().replace(microsecond=0), "EPOCHS: [{}/{}], avg_loss: [{:.4f}], val_acc: [{:.2f}%]".format(
+                epoch+1, epochs, avg_loss.item(), val_acc))
+        
+        # Early Stop
+        if val_acc > best_acc:
+            best_acc = val_acc
+            es = 5
+            torch.save(model.state_dict(), modelpath)
+        else: 
+            es -= 1
+        if es == 0: 
+            model.load_state_dict(torch.load(modelpath))
+            break
 
 
 # test 함수
@@ -127,17 +130,18 @@ def test():
     model.eval()
     avg_loss = 0
     with torch.no_grad():
-        correct = 0
-        total = 0
+        correct, total = 0, 0
         for i, (x, y) in enumerate(test_loader):
             x, y = x.to(device), y.to(device)
 
             # 순전파
             prediction = model(x)
-            correct = prediction.max(1)[1] == y
-            test_acc = correct.float().mean()
+
+            total = y.size(0)
+            correct += (prediction.max(1)[1] == y).sum().item()
+        test_acc = correct * 100 / total
     print("Acc: [{:.2f}%]".format(
-        test_acc*100
+        test_acc
     ))
 
 
