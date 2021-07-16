@@ -1,5 +1,5 @@
-# Convolutional-Neural-Networks
-Basic CNNs in pytorch
+# LeNet
+LeNet implemented with pytorch
 
 - main.py에서 parameter 부분의 path (경로)만 본인에 맞게 수정 필요
 
