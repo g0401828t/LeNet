@@ -71,7 +71,7 @@ def train():
     es = 0
     for epoch in range(epochs):
         model.train()
-        avg_loss, val_loss, val_acc = 0, 0
+        avg_loss, val_loss, val_acc = 0, 0, 0
         best_acc = 0
         for i, (x, y) in enumerate(train_loader):
             x, y = x.to(device), y.to(device)
